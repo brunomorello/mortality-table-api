@@ -1,12 +1,15 @@
 package pt.bmo.mortalitytable_api.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -15,11 +18,14 @@ import pt.bmo.mortalitytable_api.controllers.dto.MortalityDto;
 import pt.bmo.mortalitytable_api.domain.Mortality;
 import pt.bmo.mortalitytable_api.repositories.MortalityRepository;
 
+import java.io.StringWriter;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.greaterThan;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -124,5 +130,40 @@ class MortalityControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsBytes(mortalityDto)))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void processBatch() throws Exception {
+        StringWriter stringWriter = new StringWriter();
+
+        CSVPrinter csvPrinter = new CSVPrinter(stringWriter, CSVFormat.DEFAULT);
+        csvPrinter.printRecord("country", "year", "femaleTx", "maleTx");
+        csvPrinter.printRecord("IE", 2020, BigDecimal.valueOf(8.1), BigDecimal.valueOf(5.2));
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "test.csv",
+                "text/csv",
+                stringWriter.toString().getBytes(StandardCharsets.UTF_8)
+        );
+
+        mockMvc.perform(multipart(MortalityController.BASE_URL + "/batch")
+                        .file(file))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void processBatchWithoutCsv() throws Exception {
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "test.txt",
+                MediaType.TEXT_PLAIN_VALUE,
+                "test".getBytes(StandardCharsets.UTF_8)
+        );
+
+        mockMvc.perform(multipart(MortalityController.BASE_URL + "/batch")
+                        .file(file))
+                .andExpect(status().isBadRequest());
     }
 }

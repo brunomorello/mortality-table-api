@@ -15,13 +15,11 @@ import java.util.List;
 public class CsvHelper {
 
     public static String TYPE = "text/csv";
-    static String[] HEADERS = { "country", "year", "femaleTx", "maleTx" };
 
     private CsvHelper() { }
 
     public static boolean isCSVFormat(MultipartFile file) {
-        boolean result = TYPE.equals(file.getContentType());
-        return result;
+        return TYPE.equals(file.getContentType());
     }
 
     public static List<MortalityDto> csvToMortalityDtoList(InputStream is) {
@@ -35,14 +33,13 @@ public class CsvHelper {
                             null,
                             csvRecord.get("country"),
                             Integer.valueOf(csvRecord.get("year")),
-                            BigDecimal.valueOf(Long.valueOf(csvRecord.get("femaleTx"))),
-                            BigDecimal.valueOf(Long.valueOf(csvRecord.get("maleTx")))
+                            BigDecimal.valueOf(Double.valueOf(csvRecord.get("femaleTx"))),
+                            BigDecimal.valueOf(Double.valueOf(csvRecord.get("maleTx")))
                     ))
                     .toList();
         } catch (IOException e) {
             throw new RuntimeException("fail to parse CSV file: " + e.getMessage());
         }
     }
-
 
 }

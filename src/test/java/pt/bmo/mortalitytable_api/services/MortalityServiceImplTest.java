@@ -7,11 +7,14 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.web.multipart.MultipartFile;
+import pt.bmo.mortalitytable_api.controllers.dto.MortalityDto;
 import pt.bmo.mortalitytable_api.domain.Mortality;
 import pt.bmo.mortalitytable_api.exception.NotFoundException;
 import pt.bmo.mortalitytable_api.externalservice.PopulationStatisticService;
@@ -19,7 +22,11 @@ import pt.bmo.mortalitytable_api.externalservice.exception.ExternalSystemExcepti
 import pt.bmo.mortalitytable_api.externalservice.model.PopulationStatisticDto;
 import pt.bmo.mortalitytable_api.helper.MortalityTableApiHelper;
 import pt.bmo.mortalitytable_api.repositories.MortalityRepository;
+import pt.bmo.mortalitytable_api.utils.CsvHelper;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -29,6 +36,8 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -43,6 +52,12 @@ class MortalityServiceImplTest {
 
     @Mock
     private PopulationStatisticService populationStatisticService;
+
+    @Mock
+    private MultipartFile file;
+
+    @Mock
+    private InputStream inputStream;
 
     @InjectMocks
     private MortalityServiceImpl service;
@@ -148,5 +163,31 @@ class MortalityServiceImplTest {
     void updateNotFound() {
         when(mortalityRepository.findById(any(UUID.class))).thenThrow(new NotFoundException("Record not found"));
         assertThrows(NotFoundException.class, () -> service.update(UUID.randomUUID(), MortalityTableApiHelper.createMortality()));
+    }
+
+    @Test
+    @DisplayName("When batch processing for CSV file")
+    void saveRecords() {
+        MortalityDto mortalityDto = new MortalityDto(
+                null,
+                "PT",
+                2010,
+                BigDecimal.valueOf(201.1),
+                BigDecimal.valueOf(10.1)
+        );
+
+        try (MockedStatic<CsvHelper> csvHelperMockedStatic = Mockito.mockStatic(CsvHelper.class)) {
+            csvHelperMockedStatic.when(() -> CsvHelper.csvToMortalityDtoList(any())).thenReturn(Arrays.asList(mortalityDto));
+            service.saveRecords(file);
+
+            verify(mortalityRepository, atLeastOnce()).deleteByCountryAndYear(any(String.class), anyInt());
+            verify(mortalityRepository, atLeastOnce()).save(any(Mortality.class));
+        }
+    }
+
+    @Test
+    @DisplayName("when there is an exception during csv parse")
+    void saveRecordsError() {
+        assertThrows(RuntimeException.class, () -> service.saveRecords(file));
     }
 }

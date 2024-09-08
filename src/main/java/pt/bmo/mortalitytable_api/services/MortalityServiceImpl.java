@@ -5,6 +5,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import pt.bmo.mortalitytable_api.controllers.dto.MortalityDto;
 import pt.bmo.mortalitytable_api.domain.Mortality;
@@ -65,6 +66,7 @@ public class MortalityServiceImpl implements MortalityService {
         }
     }
 
+    @Transactional
     @Override
     public void saveRecords(MultipartFile file) {
         try {
