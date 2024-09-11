@@ -14,7 +14,7 @@ import java.util.List;
 
 public class CsvHelper {
 
-    public static String TYPE = "text/csv";
+    public static final String TYPE = "text/csv";
 
     private CsvHelper() { }
 

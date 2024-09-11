@@ -50,11 +50,8 @@ public class PopulationStatisticServiceImpl implements PopulationStatisticServic
                         .path(path)
                         .build(year, locale.getDisplayCountry(Locale.US)))
                 .retrieve()
-                .onStatus(HttpStatusCode::isError, clientResponse -> {
-//                    log.error("Error to find country statistics");
-                    return clientResponse.bodyToMono(String.class)
-                            .flatMap(s -> Mono.error(new ExternalSystemException(s)));
-                })
+                .onStatus(HttpStatusCode::isError, clientResponse -> clientResponse.bodyToMono(String.class)
+                        .flatMap(s -> Mono.error(new ExternalSystemException(s))))
                 .toEntityList(PopulationStatistics.class)
                 .timeout(Duration.ofMillis(DEFAULT_TIME_OUT))
                 .map(ResponseEntity::getBody)
