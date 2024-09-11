@@ -26,6 +26,16 @@ public class DataLoader implements CommandLineRunner {
                 .maleTx(BigDecimal.valueOf(4.5))
                 .build();
 
+        Mortality mortality2 = Mortality.builder()
+                .year(2017)
+                .femalePopulation(1815331)
+                .malePopulation(1874736)
+                .country("BR")
+                .femaleTx(BigDecimal.valueOf(7.29))
+                .maleTx(BigDecimal.valueOf(10.21))
+                .build();
+
         mortalityRepository.save(mortality);
+        mortalityRepository.save(mortality2);
     }
 }
